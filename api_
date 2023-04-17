@@ -1,0 +1,53 @@
+<?php
+
+namespace App\Controller;
+
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+
+class StackOverflowController extends AbstractController
+{
+    /**
+     * @Route("/api/stackoverflow/questions", methods={"GET"})
+     */
+    public function getQuestions()
+    {
+        // Obtener los parámetros de la URL
+        $tagged = $this->getRequest()->query->get('tagged');
+        $todate = $this->getRequest()->query->get('todate');
+        $fromdate = $this->getRequest()->query->get('fromdate');
+       
+       // Validar que el filtro Tagged sea obligatorio
+        if (empty($tagged)) {
+            return new JsonResponse(['error' => 'El filtro Tagged es obligatorio.'], 400);
+        }
+
+
+        // Construir la URL de la API de Stack Exchange con los filtros
+        $url = 'https://api.stackexchange.com/2.3/questions';
+        $params = array();
+
+         $params = [
+            'tagged' => $tagged
+        ];
+        
+        if (!empty($todate)) {
+            $params['todate'] = $todate;
+        }
+        
+        if (!empty($fromdate)) {
+            $params['fromdate'] = $fromdate;
+        }
+
+        // Hacer la petición a la API de Stack Exchange
+        $ch = curl_init($url . '?' . http_build_query($params));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        // Decodificar la respuesta JSON y devolverla como respuesta de la API
+        $data = json_decode($response, true);
+        return new JsonResponse($data);
+    }
+}
